@@ -1,0 +1,14 @@
+{
+  "name": "PulseCam · 生活节律记录",
+  "short_name": "PulseCam",
+  "description": "面向大学生的精力恢复与生活节律自助记录平台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF8F3",
+  "theme_color": "#FBF8F3",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#FBF8F3">
+<meta name="description" content="PulseCam AI 健康伙伴 PWA 交互演示">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="PulseCam">
+<title>PulseCam · 生活节律记录</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon-180.png">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+/* ============================================================
+   PulseCam v5 — 设计令牌
+   基调：温白／雾灰／浅银分区 + 鼠尾草绿·健康金·淡珊瑚红·雾蓝·薰衣草灰 点缀
+============================================================ */
+:root {
+  --warm:      #FBF8F3;   /* 暖白 */
+  --fog:       #F1F0EC;   /* 雾灰 */
+  --silver:    #ECEEF0;   /* 浅银 */
+  --mint:      #F1F5F1;   /* 极淡绿 */
+  --sand:      #FAF4E7;   /* 极淡金 */
+
+  --card:      #FFFFFE;
+  --card-soft: rgba(255,255,254,0.72);
+
+  --ink:       #23221E;
+  --ink-soft:  #58564E;
+  --ink-mute:  #9C978B;
+
+  --sage:      #7C9A82;  --sage-l:  #EBF2EB;  --sage-d:#4F6E56;
+  --gold:      #C79A55;  --gold-l:  #FBF2DF;  --gold-d:#8C6C34;
+  --coral:     #D98D82;  --coral-l: #FBEEEB;  --coral-d:#B15D50;
+  --fogb:      #86A0B6;  --fogb-l:  #EDF2F6;  --fogb-d:#4F6C82;
+  --lav:       #9C8FB2;  --lav-l:   #F3F0F8;  --lav-d:  #6C5F87;
+
+  --line:      #E4E0D7;
+  --line-soft: #EEEBE3;
+
+  --shadow-xs: 0 1px 2px rgba(35,28,15,0.04);
+  --shadow-sm: 0 3px 10px rgba(35,28,15,0.055);
+  --shadow:    0 6px 20px rgba(35,28,15,0.07);
+  --shadow-lg: 0 14px 38px rgba(35,28,15,0.10);
+
+  --r-lg: 22px; --r-md: 15px; --r-sm: 10px;
+  --mono: 'JetBrains Mono', 'SF Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter','PingFang SC','Microsoft YaHei',-apple-system,'SF Pro Text',sans-serif;
+  font-weight:400;
+  background:#E7E4DE;
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(199,154,85,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 90%, rgba(124,154,130,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 60% 40%, rgba(156,143,178,0.06) 0%, transparent 60%);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:28px;-webkit-font-smoothing:antialiased;
+}
+svg.icon{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-0.14em}
+
+/* ========== Top Bar ========== */
+#top-bar{
+  width:100%;max-width:1680px;margin:0 auto 24px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:16px 24px;box-shadow:var(--shadow-sm);
+  display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+  position:relative;overflow:hidden;
+}
+#top-bar::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:linear-gradient(180deg,var(--gold),var(--sage),var(--fogb),var(--lav));}
+#top-bar h1{
+  font-size:20px;font-weight:600;letter-spacing:0.03em;
+  padding:6px 20px;border:1px solid var(--line);
+  border-radius:24px;background:var(--fog);color:var(--ink);white-space:nowrap;
+}
+#top-bar .sub{font-size:13px;color:var(--ink-soft);font-weight:400;flex:1;min-width:180px;line-height:1.6;letter-spacing:0.02em}
+.badge-row{display:flex;flex-wrap:wrap;gap:6px;}
+.badge{
+  font-size:11px;font-weight:400;letter-spacing:0.03em;padding:5px 12px;
+  border:1px solid var(--line);border-radius:6px;background:var(--fog);
+  color:var(--ink-soft);
+}
+
+/* ========== Canvas ========== */
+#canvas{
+  display:flex;gap:28px;overflow-x:auto;padding:10px 0 24px 0;
+  scroll-behavior:smooth;width:100%;max-width:1680px;margin:0 auto;justify-content:center;
+}
+#canvas::-webkit-scrollbar{height:6px;}
+#canvas::-webkit-scrollbar-thumb{background:var(--ink-mute);border-radius:3px;opacity:0.3}
+
+/* ========== iPhone 15 Pro Frame ========== */
+.phone-card{
+  width:393px;min-width:393px;height:852px;
+  background:#1C1C1E;border-radius:56px;padding:14px;
+  box-shadow:0 0 0 3px #2C2C2E,0 0 0 5px #1C1C1E,0 0 0 6px #3A3A3C,0 30px 70px rgba(0,0,0,0.3),0 10px 24px rgba(0,0,0,0.18);
+  display:flex;flex-direction:column;overflow:hidden;
+  position:relative;flex-shrink:0;
+}
+.phone-screen{
+  width:100%;height:100%;border-radius:44px;
+  overflow:hidden;position:relative;display:flex;flex-direction:column;
+}
+/* 每个页面独立的分区层次背景，避免纯白 */
+.pg-overview{background:
+    radial-gradient(ellipse 480px 260px at 18% 0%, rgba(199,154,85,0.10), transparent 60%),
+    radial-gradient(ellipse 420px 300px at 100% 30%, rgba(124,154,130,0.10), transparent 55%),
+    linear-gradient(178deg, var(--warm) 0%, var(--fog) 46%, var(--mint) 100%);}
+.pg-measure{background:
+    radial-gradient(ellipse 500px 260px at 90% 0%, rgba(134,160,182,0.12), transparent 55%),
+    linear-gradient(178deg, var(--fog) 0%, var(--silver) 55%, #EAEDEE 100%);}
+.pg-ai{background:
+    radial-gradient(ellipse 460px 280px at 10% 0%, rgba(156,143,178,0.10), transparent 55%),
+    linear-gradient(178deg, var(--warm) 0%, var(--fog) 50%, var(--lav-l) 100%);}
+.pg-settings{background:
+    radial-gradient(ellipse 460px 260px at 90% 0%, rgba(199,154,85,0.07), transparent 55%),
+    linear-gradient(178deg, var(--silver) 0%, #E7E7E5 55%, #E2E3E2 100%);}
+/* 极细网格纹理，装饰而非干扰 */
+.phone-screen::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(35,28,15,0.020) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(35,28,15,0.020) 1px, transparent 1px);
+  background-size:26px 26px;
+  mask-image:radial-gradient(ellipse 90% 70% at 50% 20%, black 0%, transparent 75%);
+}
+
+/* Dynamic Island */
+.dynamic-island{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:126px;height:36px;background:#000;border-radius:20px;z-index:100;
+  display:flex;align-items:center;justify-content:center;
+}
+.dynamic-island .di-hr{font-size:10px;font-weight:500;color:var(--sage);letter-spacing:0.04em;display:flex;align-items:center;gap:4px}
+.di-pulse{width:5px;height:5px;border-radius:50%;background:var(--sage);animation:breathe 2.4s ease-in-out infinite}
+
+/* Status Bar */
+.status-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 28px 8px;font-size:13px;font-weight:500;color:var(--ink);
+  position:relative;z-index:101;
+}
+.status-bar .time{font-weight:600;letter-spacing:0.02em}
+.status-icons{display:flex;gap:6px;align-items:center;font-size:12px}
+
+/* Card Body */
+.card-body{
+  flex:1;overflow-y:auto;padding:8px 16px 10px;
+  display:flex;flex-direction:column;gap:12px;position:relative;z-index:1;
+}
+.card-body::-webkit-scrollbar{width:0}
+
+.section-eyebrow{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:500;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.07em;margin:2px 0 -2px}
+.section-eyebrow svg.icon{font-size:13px;color:var(--ink-mute)}
+
+/* ========== Shared plain Card ========== */
+.card{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:16px 18px;box-shadow:var(--shadow-sm);
+  border:1px solid var(--line-soft);position:relative;z-index:1;
+}
+.card-label{
+  font-size:12px;font-weight:500;color:var(--ink-mute);
+  text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
+
+/* ============================================================
+   页面1 · 概览 —— 核心分数卡片：仪表盘视觉
+============================================================ */
+/* ============================================================
+   首页 Hero 仪表盘 — 完整居中核心视觉模块
+============================================================ */
+.dash-hero{
+  background:var(--card);border-radius:24px;
+  padding:24px 24px 22px;margin-top:2px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.8) inset,
+    0 2px 16px rgba(35,28,15,0.06),
+    0 8px 32px rgba(35,28,15,0.05);
+  position:relative;z-index:1;
+  border:1px solid rgba(35,28,15,0.07);
+  display:flex;flex-direction:column;align-items:center;
+  overflow:hidden;
+}
+/* 玻璃高光 */
+.dash-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent);z-index:2;pointer-events:none}
+/* 柔和光晕 */
+.dash-hero::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 50% 25%, rgba(199,154,85,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 80%, rgba(124,154,130,0.06) 0%, transparent 50%);
+  z-index:0}
+
+/* — 顶部标签行 — */
+.dh-header{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:12px;position:relative;z-index:3}
+.dh-label{font-size:10.5px;font-weight:500;color:var(--ink-mute);letter-spacing:0.08em;text-transform:uppercase}
+.dh-compare{padding:3px 10px;background:var(--card-soft);backdrop-filter:blur(12px);border-radius:10px;font-size:10px;font-weight:500;color:var(--ink-soft);border:1px solid rgba(35,28,15,0.05);letter-spacing:0.03em;font-family:var(--mono)}
+
+/* — 环形仪表本体 — */
+.gauge{position:relative;width:180px;height:180px;flex-shrink:0;z-index:1}
+/* 稀疏刻度：每 10° 一根细线 */
+.gauge-ticks{position:absolute;inset:0;border-radius:50%;
+  background:repeating-conic-gradient(rgba(35,28,15,0.08) 0deg 0.8deg, transparent 0.8deg 18deg);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 20px), #000 calc(100% - 18px), #000 100%);
+          mask:radial-gradient(farthest-side, transparent calc(100% - 20px), #000 calc(100% - 18px), #000 100%);}
+/* 细环进度：健康金→鼠尾草绿 */
+.gauge-ring{position:absolute;inset:12px;border-radius:50%;
+  background:conic-gradient(from -90deg,
+    var(--gold) 0%,
+    var(--gold) calc(var(--pct)*0.4*1%),
+    var(--sage) calc(var(--pct)*0.7*1%),
+    var(--sage) calc(var(--pct)*1%),
+    var(--line-soft) calc(var(--pct)*1%) 100%);
+  box-shadow:inset 0 1px 2px rgba(255,255,255,0.6);}
+.gauge-ring::after{content:'';position:absolute;inset:18px;border-radius:50%;background:var(--card);
+  box-shadow:inset 0 2px 8px rgba(35,28,15,0.04);}
+
+/* — 中心大数字 — */
+.gauge-center{position:absolute;inset:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.gauge-center .g-val{font-size:52px;font-weight:300;color:var(--ink);line-height:1;letter-spacing:-2px;font-family:'Inter';font-feature-settings:'tnum';font-variant-numeric:tabular-nums}
+.gauge-center .g-unit{font-size:10.5px;color:var(--ink-mute);letter-spacing:0.10em;margin-top:3px;font-weight:500}
+
+/* — 底部状态标签 — */
+.dh-footer{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:14px;position:relative;z-index:3}
+.dh-status{display:inline-flex;align-items:center;gap:7px;padding:6px 16px;background:var(--sage-l);color:var(--sage-d);border-radius:16px;font-size:12px;font-weight:600;letter-spacing:0.02em}
+.dh-status .breathe-dot{width:7px;height:7px;border-radius:50%;background:var(--sage);animation:pulse-beat 1.4s ease-in-out infinite}
+@keyframes pulse-beat{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:0.3}}
+
+/* — 稳定性指示条 — */
+.dh-stability{display:flex;align-items:center;gap:8px;width:100%;max-width:260px}
+.dh-stability-label{font-size:9.5px;color:var(--ink-mute);white-space:nowrap;letter-spacing:0.03em;font-weight:500}
+.dh-stability-bar{flex:1;display:flex;gap:3px}
+.dh-stability-bar span{flex:1;height:3px;border-radius:2px;background:var(--line-soft)}
+.dh-stability-bar span.on{background:var(--sage)}
+.dh-stability-bar span.on.warm{background:var(--gold)}
+
+/* — 底部三个 mini 指标 — */
+.dh-mini-metrics{display:flex;gap:18px;margin-top:2px}
+.dh-mini-metrics .dmm{display:flex;flex-direction:column;align-items:center;gap:2px}
+.dh-mini-metrics .dmm-val{font-size:14px;font-weight:600;color:var(--ink);font-family:var(--mono);letter-spacing:-0.02em}
+.dh-mini-metrics .dmm-lbl{font-size:9.5px;color:var(--ink-mute);letter-spacing:0.03em;font-weight:500}
+
+/* ---- 建议卡片：便签风格 ---- */
+.sticky-row{display:flex;gap:12px;padding:2px 4px 6px}
+.sticky{
+  flex:1;position:relative;padding:14px 15px 16px;border-radius:3px 14px 14px 3px;
+  box-shadow:2px 4px 10px rgba(35,28,15,0.09), 0 1px 0 rgba(255,255,255,0.4) inset;
+  font-size:12px;
+}
+.sticky.do{background:var(--sage-l);transform:rotate(-1.4deg);border-left:3px solid var(--sage)}
+.sticky.dont{background:var(--coral-l);transform:rotate(1.2deg);border-left:3px solid var(--coral)}
+.sticky::before{content:'';position:absolute;top:-6px;left:16px;width:12px;height:12px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fff, var(--ink-mute) 140%);box-shadow:0 2px 3px rgba(0,0,0,0.25)}
+.sticky .st-head{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--ink);margin-bottom:9px;font-size:12.5px;letter-spacing:0.01em}
+.sticky.do .st-head svg{color:var(--sage-d)}
+.sticky.dont .st-head svg{color:var(--coral-d)}
+.st-tag-row{display:flex;flex-wrap:wrap;gap:5px}
+.st-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:500;background:rgba(255,255,255,0.55);color:var(--ink-soft);border:1px solid rgba(35,28,15,0.06)}
+
+/* ---- AI 健康报告：数据仪表 混合卡 ---- */
+.report-card{background:var(--card);border-radius:var(--r-lg);padding:16px 18px 18px;box-shadow:var(--shadow-sm);border:1px solid var(--line-soft)}
+.report-top{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.mini-ring{position:relative;width:68px;height:68px;flex-shrink:0}
+.mini-ring .mr-bg{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--gold) calc(var(--pct)*1%), var(--line-soft) 0)}
+.mini-ring .mr-bg::after{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--card)}
+.mini-ring .mr-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;color:var(--ink);font-family:var(--mono)}
+.report-top .rt-side{flex:1}
+.report-top .rt-title{font-size:14px;font-weight:600;color:var(--ink);letter-spacing:0.02em}
+.report-top .rt-trend{font-size:11.5px;color:var(--sage-d);font-weight:500;margin-top:3px;display:flex;align-items:center;gap:4px}
+.metric-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-soft)}
+.metric-row:last-of-type{border-bottom:none}
+.metric-row .mr-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.metric-row .mr-body{flex:1;min-width:0}
+.metric-row .mr-name{font-size:12.5px;color:var(--ink);font-weight:500}
+.metric-row .mr-val{font-size:11px;color:var(--ink-mute);margin-top:1px}
+.tick-bar{display:flex;gap:2px;margin-top:5px}
+.tick-bar span{flex:1;height:5px;border-radius:2px;background:var(--line-soft)}
+.tick-bar span.on{background:var(--sage)}
+.tick-bar span.on.warn{background:var(--gold)}
+.spark{width:52px;height:22px;flex-shrink:0}
+.ai-advice-box{margin-top:4px;padding:12px 15px;background:var(--sand);border-radius:var(--r-sm);font-size:12.5px;color:var(--ink);line-height:1.65;font-weight:400;border-left:2.5px solid var(--gold);display:flex;gap:8px}
+.ai-advice-box svg{flex-shrink:0;margin-top:2px;color:var(--gold-d)}
+
+/* ---- 风险卡片：趋势报告风格 ---- */
+.trend-report{background:linear-gradient(180deg,#FCFBF8,var(--card));border-radius:var(--r-lg);padding:0;box-shadow:var(--shadow-sm);border:1px solid var(--line-soft);overflow:hidden}
+.tr-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 10px;border-bottom:1px dashed var(--line)}
+.tr-head .tr-title{font-size:12px;font-weight:600;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.06em;display:flex;align-items:center;gap:6px}
+.tr-badge{padding:4px 12px;border-radius:11px;font-size:10.5px;font-weight:700;letter-spacing:0.04em;background:var(--sage-l);color:var(--sage-d)}
+.tr-body{padding:14px 18px 16px;display:flex;gap:18px;align-items:flex-end}
+.tr-num{font-size:38px;font-weight:300;color:var(--ink);letter-spacing:-1px;font-family:var(--mono);line-height:1}
+.tr-num-unit{font-size:13px;color:var(--ink-mute);margin-left:2px;font-weight:500}
+.tr-chart{flex:1;height:56px}
+.tr-table{padding:0 18px 14px}
+.tr-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:11.5px}
+.tr-row:last-child{border-bottom:none}
+.tr-row .tr-day{color:var(--ink-mute);font-family:var(--mono)}
+.tr-row .tr-bar-bg{flex:1;margin:0 10px;height:4px;background:var(--line-soft);border-radius:2px;overflow:hidden}
+.tr-row .tr-bar-fill{height:100%;border-radius:2px;background:var(--sage)}
+.tr-row .tr-pct{font-family:var(--mono);color:var(--ink);font-weight:500;width:32px;text-align:right}
+.tr-note{margin:0 18px 16px;padding:11px 14px;background:var(--fog);border-radius:var(--r-sm);font-size:11.5px;color:var(--ink-soft);line-height:1.6}
+
+/* ---- 数字孪生趋势 ---- */
+.twin-card{background:var(--card);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow-sm);border:1px solid var(--line-soft)}
+.twin-canvas-wrap{position:relative;height:92px;margin:4px 0}
+.twin-canvas-wrap canvas{width:100%;height:100%}
+.twin-legend{display:flex;gap:16px;font-size:11px;font-weight:500;margin-top:6px}
+.twin-legend span{display:flex;align-items:center;gap:5px;color:var(--ink-soft);letter-spacing:0.02em}
+.twin-legend .tdot{width:7px;height:7px;border-radius:50%}
+.tdot.blue{background:var(--ink)}
+.tdot.green{background:var(--sage)}
+.tdot.purple{background:var(--lav)}
+
+/* ---- 打卡日历 ---- */
+.cal-card{background:var(--card);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow-sm);border:1px solid var(--line-soft)}
+.cal-dot-grid{display:flex;flex-direction:column;gap:12px}
+.cal-month-header{display:flex;justify-content:space-between;align-items:center}
+.cal-month-label{font-size:14px;font-weight:600;color:var(--ink);letter-spacing:0.02em}
+.cal-month-nav{font-size:14px;color:var(--ink-mute);cursor:pointer;padding:2px 8px}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:10px;font-weight:600;color:var(--ink-mute);margin-bottom:-4px;letter-spacing:0.04em}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px 0;text-align:center}
+.cal-day{display:flex;flex-direction:column;align-items:center;gap:4px;padding:3px 0}
+.cal-day-num{font-size:11px;font-weight:400;color:var(--ink)}
+.cal-day-dot{width:6px;height:6px;border-radius:50%}
+.dot-done{background:var(--sage)}
+.dot-miss{background:var(--line)}
+.dot-today{background:var(--gold);box-shadow:0 0 0 3px var(--gold-l)}
+.cal-stats{display:flex;justify-content:space-between;font-size:12px;font-weight:500;margin-top:6px;letter-spacing:0.02em}
+.cal-stats .stat-done{color:var(--sage-d)}
+.cal-stats .stat-total{color:var(--ink-mute)}
+
+/* ============================================================
+   页面2 · 测量 —— 视觉焦点：镜头扫描区域
+============================================================ */
+.scenario-pills{display:flex;gap:0;background:var(--card);border-radius:var(--r-sm);overflow:hidden;box-shadow:var(--shadow-xs);border:1px solid var(--line-soft)}
+.scenario-pill{
+  flex:1;text-align:center;padding:9px 2px;font-size:11px;font-weight:400;
+  cursor:pointer;border:none;font-family:inherit;background:transparent;
+  color:var(--ink-mute);position:relative;white-space:nowrap;letter-spacing:0.02em;
+}
+.scenario-pill.active{color:var(--ink);font-weight:600;background:var(--fogb-l)}
+.scenario-pill.active::after{content:'';position:absolute;bottom:0;left:25%;right:25%;height:2px;background:var(--fogb-d);border-radius:1px}
+
+.camera-preview{
+  background:radial-gradient(ellipse at 50% 30%, #182028 0%, #0B0E12 75%);
+  border-radius:var(--r-lg);height:190px;position:relative;overflow:hidden;box-shadow:var(--shadow-lg);
+  border:1px solid rgba(255,255,255,0.05);
+}
+.camera-preview .cp-grid{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(134,160,182,0.14) 1px,transparent 1px),linear-gradient(90deg,rgba(134,160,182,0.14) 1px,transparent 1px);
+  background-size:20px 20px;opacity:0.5}
+.camera-preview .cam-status{position:absolute;top:11px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,0.55);background:rgba(255,255,255,0.06);backdrop-filter:blur(6px);padding:4px 12px;border-radius:8px;letter-spacing:0.04em;display:flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,0.06)}
+.rec-dot{width:6px;height:6px;border-radius:50%;background:var(--coral);animation:breathe 1.6s ease-in-out infinite}
+.roi-box{position:absolute;top:14%;left:26%;right:26%;bottom:16%;border-radius:14px}
+.roi-box .corner{position:absolute;width:16px;height:16px;border-color:var(--gold);opacity:0.85}
+.roi-box .c1{top:-1px;left:-1px;border-top:2px solid;border-left:2px solid;border-top-left-radius:6px}
+.roi-box .c2{top:-1px;right:-1px;border-top:2px solid;border-right:2px solid;border-top-right-radius:6px}
+.roi-box .c3{bottom:-1px;left:-1px;border-bottom:2px solid;border-left:2px solid;border-bottom-left-radius:6px}
+.roi-box .c4{bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid;border-bottom-right-radius:6px}
+.roi-box::after{content:'ROI · f/2.8';position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9.5px;color:rgba(199,154,85,0.65);font-family:var(--mono);letter-spacing:0.05em;white-space:nowrap}
+.scan-line{position:absolute;left:26%;right:26%;height:2px;background:linear-gradient(90deg,transparent,var(--sage),transparent);
+  box-shadow:0 0 8px 1px rgba(124,154,130,0.7);animation:scan 2.6s ease-in-out infinite}
+@keyframes scan{0%{top:14%}50%{top:calc(84% - 2px)}100%{top:14%}}
+.cam-float-card{position:absolute;bottom:11px;right:12px;background:rgba(255,255,255,0.08);backdrop-filter:blur(16px);border-radius:var(--r-sm);padding:8px 13px;display:flex;gap:14px;font-size:11px;color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.08)}
+.cam-float-card .cf-val{font-weight:400;font-size:18px;letter-spacing:-0.3px;font-family:var(--mono)}
+.cam-float-card .cf-label{font-size:9.5px;opacity:0.5;letter-spacing:0.05em}
+
+.waveform-card{background:var(--card);border-radius:var(--r-md);padding:9px 10px;box-shadow:var(--shadow-xs);border:1px solid var(--line-soft);display:flex;align-items:center;gap:8px}
+.waveform-card canvas{width:100%;height:36px;display:block;flex:1}
+.waveform-card .wf-tag{font-size:9.5px;color:var(--sage-d);background:var(--sage-l);padding:3px 7px;border-radius:6px;font-weight:600;letter-spacing:0.03em;white-space:nowrap}
+
+.measure-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.measure-mini .mm-card{background:var(--card);border-radius:var(--r-md);padding:13px 14px;box-shadow:var(--shadow-xs);border:1px solid var(--line-soft);display:flex;align-items:center;gap:10px;text-align:left}
+.mm-card .mm-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mm-card .mm-val{font-size:21px;font-weight:600;color:var(--ink);letter-spacing:-0.3px;font-family:var(--mono);line-height:1}
+.mm-card .mm-label{font-size:10.5px;color:var(--ink-mute);margin-top:3px;letter-spacing:0.02em;font-weight:500}
+
+.result-card{background:linear-gradient(165deg,var(--card),var(--sand));border-radius:var(--r-lg);padding:22px 24px;text-align:center;box-shadow:var(--shadow);border:1px solid var(--line-soft);position:relative;overflow:hidden}
+.result-card::before{content:'';position:absolute;top:-30%;right:-15%;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(199,154,85,0.14),transparent 70%)}
+.result-card .rc-label{font-size:12px;color:var(--ink-mute);letter-spacing:0.05em;font-weight:600;text-transform:uppercase}
+.result-big{font-size:52px;font-weight:300;color:var(--ink);line-height:1;margin:6px 0;letter-spacing:-1px;font-family:'Inter';font-feature-settings:'tnum';font-variant-numeric:tabular-nums;position:relative;z-index:1}
+.ai-why-btn{display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:7px 18px;background:var(--card);color:var(--ink-soft);border:1px solid var(--line);border-radius:18px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;letter-spacing:0.02em;transition:all 0.2s}
+.ai-why-btn:hover{background:var(--fog);color:var(--ink)}
+.ai-explain-pop{margin-top:10px;padding:14px 16px;background:var(--fog);border-radius:var(--r-sm);font-size:12px;color:var(--ink);line-height:1.65;display:none;text-align:left;border-left:2.5px solid var(--gold);font-weight:400}
+.ai-explain-pop.show{display:block}
+.scenario-advice-card{margin-top:2px;padding:14px 16px;background:var(--lav-l);border-radius:var(--r-md);font-size:12px;color:var(--ink);line-height:1.6;display:flex;align-items:center;gap:11px;font-weight:400;border:1px solid rgba(156,143,178,0.18)}
+.scenario-advice-card .sa-icon{width:34px;height:34px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;box-shadow:var(--shadow-xs)}
+.scenario-advice-card .sa-title{font-weight:600;margin-bottom:3px;color:var(--lav-d);letter-spacing:0.02em;font-size:13px}
+.breathe-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--lav);animation:breathe 4s ease-in-out infinite;vertical-align:middle;margin-right:4px}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:0.7}50%{transform:scale(2.6);opacity:0.15}}
+
+/* ============================================================
+   页面3 · AI助手 —— 视觉焦点：对话气泡层次
+============================================================ */
+.chat-header-area{text-align:center;padding:6px 0 4px;position:relative}
+.chat-header-area .ch-title{font-size:20px;font-weight:600;color:var(--ink);letter-spacing:0.02em}
+.chat-header-area .ch-sub{font-size:11.5px;color:var(--ink-mute);margin-top:5px;letter-spacing:0.03em;display:flex;align-items:center;justify-content:center;gap:5px}
+.chat-day-divider{text-align:center;font-size:10.5px;color:var(--ink-mute);letter-spacing:0.05em;margin:2px 0;position:relative}
+.chat-day-divider span{background:transparent;padding:0 10px;position:relative;z-index:1}
+.chat-day-divider::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line);z-index:0}
+.chat-list{display:flex;flex-direction:column;gap:12px}
+.chat-bubble{max-width:86%;padding:12px 16px;border-radius:16px;font-size:13px;line-height:1.6;font-weight:400}
+.chat-bubble.user{align-self:flex-end;background:var(--sage-l);color:var(--ink);border-bottom-right-radius:4px;border:1px solid rgba(124,154,130,0.16)}
+.chat-bubble.ai{align-self:flex-start;background:var(--card);color:var(--ink);border-bottom-left-radius:4px;box-shadow:var(--shadow-xs);display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line-soft)}
+.chat-bubble .ai-avatar{width:26px;height:26px;border-radius:9px;background:linear-gradient(150deg,var(--ink),#3E3D38);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:500;position:relative}
+.chat-bubble .ai-avatar::after{content:'';position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;background:var(--sage);box-shadow:0 0 0 2px var(--card)}
+.chat-insight-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chat-insight-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:7px;font-size:10.5px;font-weight:600;font-family:var(--mono)}
+.chip-coral{background:var(--coral-l);color:var(--coral-d)}
+.chip-sage{background:var(--sage-l);color:var(--sage-d)}
+.chip-gold{background:var(--gold-l);color:var(--gold-d)}
+.chat-bubble .cb-time{font-size:10px;color:var(--ink-mute);margin-top:5px;text-align:right;letter-spacing:0.03em}
+.chat-input-area{display:flex;flex-direction:column;gap:8px;margin-top:auto}
+.voice-hold-btn{width:100%;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:22px;font-size:13px;font-weight:500;color:var(--ink-soft);text-align:center;cursor:pointer;font-family:inherit;box-shadow:var(--shadow-xs);letter-spacing:0.02em;display:flex;align-items:center;justify-content:center;gap:7px}
+.chat-text-row{display:flex;gap:8px}
+.chat-input{flex:1;padding:10px 16px;border:1px solid var(--line);border-radius:20px;font-size:13px;font-family:inherit;outline:none;background:var(--card);font-weight:400}
+.chat-send-btn{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;border:none;font-size:16px;cursor:pointer;flex-shrink:0;transition:opacity 0.2s;display:flex;align-items:center;justify-content:center}
+.chat-send-btn:hover{opacity:0.8}
+.chat-privacy{text-align:center;font-size:10px;color:var(--ink-mute);margin-top:4px;letter-spacing:0.03em;display:flex;align-items:center;justify-content:center;gap:5px}
+
+/* ============================================================
+   页面4 · 设置 —— 视觉焦点：系统数据控制面板
+============================================================ */
+.panel-group{background:linear-gradient(165deg,#2A2C2E,#232527);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-lg);border:1px solid #3A3C3E;position:relative}
+.panel-group::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:repeating-linear-gradient(180deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 3px);}
+.panel-group-title{font-size:10.5px;font-weight:600;color:#9AA0A0;text-transform:uppercase;letter-spacing:0.09em;padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);position:relative;z-index:1}
+.panel-group-title .led{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--sage);letter-spacing:0.05em}
+.led-dot{width:5px;height:5px;border-radius:50%;background:var(--sage);box-shadow:0 0 5px 1px rgba(124,154,130,0.7);animation:breathe 2.6s ease-in-out infinite}
+.setting-item{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid rgba(255,255,255,0.055);position:relative;z-index:1}
+.setting-item:last-child{border-bottom:none}
+.setting-left{display:flex;align-items:center;gap:11px}
+.setting-icon{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#C7CBCB;font-size:14px;border:1px solid rgba(255,255,255,0.06)}
+.setting-text{display:flex;flex-direction:column;gap:3px}
+.setting-name{font-size:13.5px;font-weight:500;color:#EDEEEE;letter-spacing:0.02em}
+.setting-desc{font-size:11px;color:#8B9090;letter-spacing:0.02em;font-weight:400;font-family:var(--mono)}
+.setting-right{font-size:12px;color:#A9AEAE;display:flex;align-items:center;gap:6px;font-weight:400}
+.chevron{color:#5B5F5F;font-size:14px}
+
+.toggle-sw{width:42px;height:24px;background:#45484A;border-radius:13px;position:relative;transition:background 0.3s;cursor:pointer;flex-shrink:0;border:1px solid rgba(255,255,255,0.06)}
+.toggle-sw.on{background:var(--sage-d)}
+.toggle-sw::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#EDEEEE;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.toggle-sw.on::after{transform:translateX(18px);background:#fff}
+
+.slider-group{padding:6px 18px 16px;position:relative;z-index:1}
+.slider-header{display:flex;justify-content:space-between;font-size:12px;font-weight:500;margin-bottom:6px;letter-spacing:0.02em}
+.slider-header .sl{color:#DADDDD;display:flex;align-items:center;gap:6px}
+.slider-header .sv{color:var(--gold);font-family:var(--mono);font-weight:600}
+.slider-input{width:100%;-webkit-appearance:none;height:3px;border-radius:2px;background:#45484A;outline:none}
+.slider-input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#EDEEEE;border:2px solid var(--gold);box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer}
+.slider-scale{display:flex;justify-content:space-between;font-size:9px;color:#6E7272;font-family:var(--mono);margin-top:4px}
+
+.widget-row{display:flex;gap:8px;padding:6px 18px 14px;overflow-x:auto;position:relative;z-index:1}
+.widget-row::-webkit-scrollbar{width:0;height:0}
+.widget-thumb{flex-shrink:0;width:128px;padding:12px;border-radius:var(--r-md);background:rgba(255,255,255,0.05);text-align:center;border:1px solid rgba(255,255,255,0.08)}
+.widget-thumb .wt-title{font-size:9.5px;font-weight:600;color:#8B9090;letter-spacing:0.05em;font-family:var(--mono)}
+.widget-thumb .wt-val{font-size:24px;font-weight:300;color:#EDEEEE;margin:4px 0;font-family:var(--mono)}
+.widget-thumb .wt-sub{font-size:9.5px;color:#8B9090;letter-spacing:0.02em}
+
+/* ---- PulseCam Pro 订阅卡片 ---- */
+.pro-card{
+  background:linear-gradient(135deg,var(--sage-d),var(--sage));
+  border-radius:var(--r-lg);padding:16px 18px;position:relative;z-index:1;
+  color:#fff;box-shadow:0 6px 24px rgba(79,110,86,0.25),inset 0 1px 0 rgba(255,255,255,0.15);
+}
+.pro-tag{font-size:9px;font-weight:700;letter-spacing:0.06em;opacity:0.6;text-transform:uppercase;margin-bottom:8px}
+.pro-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.pro-left{display:flex;align-items:center;gap:10px}
+.pro-icon{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0}
+.pro-title{font-size:13px;font-weight:700;line-height:1.2}
+.pro-desc{font-size:8.5px;opacity:0.7;margin-top:2px;font-weight:400;line-height:1.3}
+.pro-price{text-align:right;flex-shrink:0}
+.pro-amount{font-size:22px;font-weight:700;font-family:var(--mono)}
+.pro-period{font-size:10px;opacity:0.6;margin-left:2px;font-weight:500}
+.pro-features{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.pro-check{font-size:9px;font-weight:500;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.9)}
+.pro-check.fade{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.45)}
+.pro-btn{width:100%;padding:10px;border:none;border-radius:10px;font-size:11px;font-weight:700;color:var(--sage-d);background:#fff;cursor:pointer;font-family:inherit;transition:all 0.15s;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.pro-btn:hover{transform:scale(1.02)}
+.pro-foot{font-size:8px;opacity:0.4;text-align:center;margin-top:6px;letter-spacing:0.03em}
+
+.standby-preview{background:linear-gradient(135deg,#14171A 0%,#1E2226 100%);border-radius:var(--r-lg);padding:20px;text-align:center;margin:6px 16px 10px;border:1px solid rgba(255,255,255,0.06);position:relative;z-index:1}
+
+.standby-preview .sb-time{font-size:32px;font-weight:300;color:#fff;letter-spacing:3px;font-family:var(--mono)}
+.standby-preview .sb-metric{font-size:13px;color:var(--sage);margin-top:6px;font-weight:500;letter-spacing:0.03em}
+.standby-preview .sb-label{font-size:9.5px;color:rgba(255,255,255,0.32);margin-top:5px;letter-spacing:0.05em;font-family:var(--mono)}
+
+/* ========== Bottom Nav ========== */
+.card-nav{
+  height:74px;min-height:74px;background:var(--card);
+  border-top:1px solid var(--line-soft);display:flex;
+  justify-content:space-around;align-items:center;
+  padding:0 4px 10px;z-index:20;position:relative;
+}
+.nav-tab{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;width:60px;height:54px;gap:3px;
+  -webkit-tap-highlight-color:transparent;
+}
+.nav-icon{font-size:19px;z-index:2;position:relative;opacity:0.4;transition:opacity 0.2s;color:var(--ink-soft)}
+.nav-label{font-size:10.5px;font-weight:500;color:var(--ink-mute);z-index:2;position:relative;letter-spacing:0.02em;transition:color 0.2s}
+.nav-tab.active .nav-label{color:var(--ink);font-weight:600}
+.nav-tab.active .nav-icon{opacity:1;color:var(--gold-d)}
+.nav-dot-indicator{
+  position:absolute;bottom:2px;width:4px;height:4px;border-radius:50%;
+  background:var(--gold);display:none;
+}
+.nav-tab.active .nav-dot-indicator{display:block}
+/* 确保全平台居中 */
+body{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;min-height:100vh!important;background:#E7E4DE!important;margin:0!important;padding:24px 16px!important;box-sizing:border-box!important}
+#top-bar{display:none!important}
+#canvas{display:flex!important;justify-content:center!important;align-items:center!important;width:100%!important;max-width:100%!important;margin:0 auto!important;padding:0!important;overflow:visible!important}
+.phone-card{margin-left:auto!important;margin-right:auto!important;flex-shrink:0!important}
+</style>
+<link rel="stylesheet" href="/mobile.css?v=20261103_review_v12">
+</head>
+<body>
+
+<!-- 隐藏图标 sprite：学习/健身/睡眠/压力/风险/AI/同步 等模块图标 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.6"/><path d="M9 7l1.4-2.4h3.2L15 7"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5Z"/><path d="M8 9.5h8M8 13h5"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.4M12 18.1v2.4M20.5 12h-2.4M5.9 12H3.5M17.7 6.3l-1.7 1.7M8 16l-1.7 1.7M17.7 17.7 16 16M8 8 6.3 6.3"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 6.8 6.8 0 0 0 20 14.5Z"/></symbol>
+<symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2 6 4-14 2 8h6"/></symbol>
+<symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 4.5a3 3 0 0 0-3 3v.3A3 3 0 0 0 4.5 10.5v2A3 3 0 0 0 6 15.1v.4a3 3 0 0 0 3 3 2.5 2.5 0 0 0 2.5-2.5V7A2.5 2.5 0 0 0 9 4.5Z"/><path d="M15 4.5a3 3 0 0 1 3 3v.3a3 3 0 0 1 1.5 2.7v2A3 3 0 0 1 18 15.1v.4a3 3 0 0 1-3 3 2.5 2.5 0 0 1-2.5-2.5V7A2.5 2.5 0 0 1 15 4.5Z"/></symbol>
+<symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M6 8v8M18 8v8M2.5 10.5v3M21.5 10.5v3M6 12h12"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 21.5 20h-19L12 3.5Z"/><path d="M12 10v4"/><circle cx="12" cy="16.6" r="0.4" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-sync" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.7L20 8"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 16"/><path d="M20 4v4h-4M4 20v-4h4"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v18H6.5A2.5 2.5 0 0 0 4 23V5.5Z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v18h5.5a2.5 2.5 0 0 1 2.5 2V5.5Z"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="M8.6 12.2l2.2 2.3 4.6-4.9"/></symbol>
+<symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c-1.5-6 2-13 14-14 1 8-4.5 13.5-11 14-1 1.7-1 3-1 3"/></symbol>
+<symbol id="i-watch" viewBox="0 0 24 24"><rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 3h6M9 21h6M12 10v2.3l1.6 1.2"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4M9 21h6"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4"/><path d="M5 19h14"/></symbol>
+<symbol id="i-tune" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M9 12h11M4 18h13M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="7" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+<symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6.5 16-3-7-6.5-1Z"/></symbol>
+</defs>
+</svg>
+
+<!-- Top Bar -->
+<div id="top-bar">
+  <h1>PulseCam</h1>
+  <span class="sub">AI 健康伙伴 · 移动端全界面 UI 设计<br>暖白·雾灰·浅银分区层次 — 数据可视化与卡片性格化的健康控制台</span>
+  <div class="badge-row">
+    <span class="badge" style="background:var(--gold-l);color:var(--gold-d)">Recovery Score</span>
+    <span class="badge" style="background:var(--sage-l);color:var(--sage-d)">Android & iOS 双端生态</span>
+    <span class="badge" style="background:var(--lav-l);color:var(--lav-d)">AI 端侧</span>
+    <span class="badge" style="background:var(--fogb-l);color:var(--fogb-d)">情景测量</span>
+    <span class="badge">数字孪生</span>
+  </div>
+</div>
+
+<!-- Canvas -->
+<div id="canvas">
+
+<!-- ====== Card 1: 健康概览 ====== -->
+<div class="phone-card">
+  <div class="phone-screen pg-overview">
+    <div class="dynamic-island"><span class="di-hr">PulseCam</span></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="status-icons">
+        <svg width="16" height="11" viewBox="0 0 16 11"><rect x="0" y="7" width="2" height="4" rx="0.5" fill="currentColor"/><rect x="3" y="5.5" width="2" height="5.5" rx="0.5" fill="currentColor"/><rect x="6" y="4" width="2" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="2" width="2" height="9" rx="0.5" fill="currentColor"/></svg>
+        <span>5G</span>
+        <svg width="24" height="12" viewBox="0 0 24 12"><rect x="0" y="1" width="20" height="10" rx="2" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="2" y="3" width="16" height="6" rx="1" fill="currentColor"/><rect x="22" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+
+      <!-- ====== Hero 仪表盘 ====== -->
+      <div class="dash-hero">
+        <div class="dh-header">
+          <span class="dh-label">今日状态分</span>
+          <span class="dh-compare">WK ↑3</span>
+        </div>
+        <div class="gauge">
+          <div class="gauge-ticks"></div>
+          <div class="gauge-ring" style="--pct:0"></div>
+          <div class="gauge-center">
+            <div class="g-val">—</div>
+            <div class="g-unit">RECOVERY</div>
+          </div>
+        </div>
+        <div class="dh-footer">
+          <div class="dh-status"><span class="breathe-dot"></span>尚未记录</div>
+          <div class="dh-stability">
+            <span class="dh-stability-label">恢复稳定性</span>
+            <div class="dh-stability-bar">
+              <span class="on"></span><span class="on"></span><span class="on"></span>
+              <span class="on"></span><span class="on"></span><span class="on"></span>
+              <span class="on warm"></span><span class="on warm"></span><span class="on warm"></span>
+              <span class="on"></span><span class="on"></span>
+            </div>
+          </div>
+          <div class="dh-mini-metrics">
+            <div class="dmm"><div class="dmm-val">—</div><div class="dmm-lbl">HRV</div></div>
+            <div class="dmm"><div class="dmm-val">—</div><div class="dmm-lbl">静息心率</div></div>
+            <div class="dmm"><div class="dmm-val">—</div><div class="dmm-lbl">睡眠</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 建议：便签风格 -->
+      <div class="sticky-row" hidden>
+        <div class="sticky do">
+          <div class="st-head"><svg class="icon"><use href="#i-leaf"/></svg>今日适合</div>
+          <div class="st-tag-row">
+            <span class="st-tag"><svg class="icon"><use href="#i-book"/></svg>学习</span>
+            <span class="st-tag"><svg class="icon"><use href="#i-dumbbell"/></svg>健身</span>
+            <span class="st-tag"><svg class="icon"><use href="#i-brain"/></svg>面试</span>
+          </div>
+        </div>
+        <div class="sticky dont">
+          <div class="st-head"><svg class="icon"><use href="#i-alert"/></svg>今日谨慎</div>
+          <div class="st-tag-row">
+            <span class="st-tag"><svg class="icon"><use href="#i-moon"/></svg>熬夜</span>
+            <span class="st-tag"><svg class="icon"><use href="#i-pulse"/></svg>高强度运动</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 健康报告 -->
+      <div class="report-card">
+        <div class="card-label"><svg class="icon"><use href="#i-sparkle"/></svg>今日健康报告</div>
+        <div class="report-top" hidden>
+          <div class="mini-ring" style="--pct:0"><div class="mr-bg"></div><div class="mr-val">—</div></div>
+          <div class="rt-side">
+            <div class="rt-title">综合评分</div>
+            <div class="rt-trend"><svg class="icon" style="font-size:11px"><use href="#i-pulse"/></svg>↑ 5% 对比昨日</div>
+          </div>
+        </div>
+        <div class="metric-row" hidden>
+          <div class="mr-icon" style="background:var(--sage-l);color:var(--sage-d)"><svg class="icon"><use href="#i-moon"/></svg></div>
+          <div class="mr-body">
+            <div class="mr-name">睡眠恢复 <span style="color:var(--sage-d);font-weight:600">良好</span></div>
+            <div class="tick-bar">
+              <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <svg class="spark" viewBox="0 0 60 24"><polyline points="0,16 8,14 16,12 24,13 32,8 40,9 48,5 56,6" fill="none" stroke="var(--sage)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="metric-row" hidden>
+          <div class="mr-icon" style="background:var(--gold-l);color:var(--gold-d)"><svg class="icon"><use href="#i-brain"/></svg></div>
+          <div class="mr-body">
+            <div class="mr-name">压力水平 <span style="color:var(--ink-soft);font-weight:600">偏低</span></div>
+            <div class="tick-bar">
+              <span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <svg class="spark" viewBox="0 0 60 24"><polyline points="0,8 8,10 16,7 24,12 32,14 40,11 48,16 56,15" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="ai-advice-box"><svg class="icon"><use href="#i-sparkle"/></svg>下午适合高效学习，建议今晚 23 点前入睡，明天状态会更佳</div>
+      </div>
+
+      <!-- 风险：趋势报告风格 -->
+      <div class="trend-report" hidden>
+        <div class="tr-head">
+          <div class="tr-title"><svg class="icon"><use href="#i-alert"/></svg>3天疲劳风险预测</div>
+          <div class="tr-badge">低风险</div>
+        </div>
+        <div class="tr-body">
+          <div><span class="tr-num">18</span><span class="tr-num-unit">%</span></div>
+          <svg class="tr-chart" viewBox="0 0 200 56" preserveAspectRatio="none">
+            <polyline points="0,20 30,24 60,18 90,30 120,26 150,34 180,30 200,32" fill="none" stroke="var(--coral)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="0,20 30,24 60,18 90,30 120,26 150,34 180,30 200,32" fill="url(#riskGrad)" stroke="none" opacity="0.16"/>
+            <defs><linearGradient id="riskGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--coral)"/><stop offset="100%" stop-color="transparent"/></linearGradient></defs>
+          </svg>
+        </div>
+        <div class="tr-table">
+          <div class="tr-row"><span class="tr-day">D+1</span><div class="tr-bar-bg"><div class="tr-bar-fill" style="width:20%;background:var(--sage)"></div></div><span class="tr-pct">20%</span></div>
+          <div class="tr-row"><span class="tr-day">D+2</span><div class="tr-bar-bg"><div class="tr-bar-fill" style="width:16%;background:var(--sage)"></div></div><span class="tr-pct">16%</span></div>
+          <div class="tr-row"><span class="tr-day">D+3</span><div class="tr-bar-bg"><div class="tr-bar-fill" style="width:0%;background:var(--gold)"></div></div><span class="tr-pct">—</span></div>
+        </div>
+        <div class="tr-note">最近 3 天恢复指数稳定，无需调整计划。继续保持当前作息节奏。</div>
+      </div>
+
+      <!-- 数字孪生 -->
+      <div class="twin-card" hidden>
+        <div class="card-label"><svg class="icon"><use href="#i-sync"/></svg>↻ 近 7 天真实趋势</div>
+        <div class="twin-canvas-wrap"><canvas id="twinCanvas1"></canvas></div>
+        <div class="twin-legend"><span><span class="tdot blue"></span>恢复</span><span><span class="tdot green"></span>睡眠</span><span><span class="tdot purple"></span>压力</span></div>
+      </div>
+
+      <!-- 打卡日历 -->
+      <div class="cal-card">
+        <div class="cal-dot-grid">
+          <div class="cal-month-header">
+            <span class="cal-month-nav">◂</span>
+            <span class="cal-month-label">2026 · 10月</span>
+            <span class="cal-month-nav">▸</span>
+          </div>
+          <div class="cal-weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+          <div class="cal-days" id="calDays"></div>
+          <div class="cal-stats">
+            <span class="stat-done">● 已打卡 0 天</span>
+            <span class="stat-total">30 天</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+        <div class="card-nav">
+      <div class="nav-tab active"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-home"/></svg><span class="nav-label">首页</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-camera"/></svg><span class="nav-label">测量</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-chat"/></svg><span class="nav-label">AI顾问</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-gear"/></svg><span class="nav-label">设置</span></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ====== Card 2: 测量 ====== -->
+<div class="phone-card">
+  <div class="phone-screen pg-measure">
+    <div class="dynamic-island"><span class="di-hr">PulseCam</span></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="status-icons">
+        <svg width="16" height="11" viewBox="0 0 16 11"><rect x="0" y="7" width="2" height="4" rx="0.5" fill="currentColor"/><rect x="3" y="5.5" width="2" height="5.5" rx="0.5" fill="currentColor"/><rect x="6" y="4" width="2" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="2" width="2" height="9" rx="0.5" fill="currentColor"/></svg>
+        <span>5G</span>
+        <svg width="24" height="12" viewBox="0 0 24 12"><rect x="0" y="1" width="20" height="10" rx="2" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="2" y="3" width="16" height="6" rx="1" fill="currentColor"/><rect x="22" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+      </span>
+    </div>
+    <div class="card-body" id="measureBody">
+      <div style="font-size:18px;font-weight:600;color:var(--ink);letter-spacing:0.02em">情景测量</div>
+      <div class="scenario-pills" id="scenarioPills">
+        <button class="scenario-pill active" data-scenario="日常" onclick="switchScenario(this,'☺','日常模式','当前状态良好，保持规律作息。建议每天完成 30 分钟轻度活动。')">日常</button>
+        <button class="scenario-pill" data-scenario="面试" onclick="switchScenario(this,'☹','面试模式','焦虑指数偏高，建议深呼吸 2 分钟平复情绪。')">面试</button>
+        <button class="scenario-pill" data-scenario="考试" onclick="switchScenario(this,'⏣','考试模式','脑力负荷偏高，每 45 分钟休息放松肩颈。')">考试</button>
+        <button class="scenario-pill" data-scenario="运动" onclick="switchScenario(this,'⟳','运动模式','恢复良好，适合中等强度，注意运动后拉伸。')">运动</button>
+        <button class="scenario-pill" data-scenario="经期" onclick="switchScenario(this,'⚭','经期模式','HRV 偏低属周期正常现象，建议温和舒缓活动。')">经期</button>
+      </div>
+
+      <!-- 状态 1：待机空闲 (Idle) -->
+      <div class="measure-state measure-idle" id="measureIdle">
+        <div class="measure-mode-toggle" id="measureModeToggle">
+          <button type="button" class="mode-pill active" id="btnModeFace" data-mode="face">☺ 前置面部无感测</button>
+          <button type="button" class="mode-pill" id="btnModeFinger" data-mode="finger">☝ 指尖贴镜高精测</button>
+        </div>
+        <div class="lens-card">
+          <div class="cam-status" id="idleCamStatus"><span class="rec-dot"></span>前置摄像头 · 本机处理</div>
+          <div class="lens-center">
+            <svg class="aperture-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="14.31" y1="8" x2="20.05" y2="17.94"/>
+              <line x1="9.69" y1="8" x2="21.17" y2="8"/>
+              <line x1="7.38" y1="12" x2="13.12" y2="2.06"/>
+              <line x1="9.69" y1="16" x2="3.95" y2="6.06"/>
+              <line x1="14.31" y1="16" x2="2.83" y2="16"/>
+              <line x1="16.62" y1="12" x2="10.88" y2="21.94"/>
+            </svg>
+            <div class="lens-f">FACE SCAN</div>
+            <div class="lens-note" id="idleScenarioNote">面部扫描</div>
+            <div class="lens-sub">面向前置摄像头，画面只在本机处理。</div>
+          </div>
+        </div>
+        <button class="btn-start-measure" type="button" id="btnStartMeasure">开始扫脸</button>
+        <button class="btn-idle-manual" type="button" id="btnIdleManual">手动填写今日记录</button>
+        <div class="privacy-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+          <span>5 秒自检；可选 15 秒心率或 60 秒短时 HRV 参考测量。</span>
+        </div>
+      </div>
+
+      <div class="measure-state measure-measuring" id="measureMeasuring" style="display:none"></div>
+      <div class="measure-state measure-done" id="measureDone" style="display:none"></div>
+    </div>
+        <div class="card-nav">
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-home"/></svg><span class="nav-label">首页</span></div>
+      <div class="nav-tab active"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-camera"/></svg><span class="nav-label">记录</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-chat"/></svg><span class="nav-label">AI顾问</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-gear"/></svg><span class="nav-label">设置</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Card 3: AI 健康助手 ====== -->
+<div class="phone-card">
+  <div class="phone-screen pg-ai">
+    <div class="dynamic-island"><span class="di-hr">PulseCam</span></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="status-icons">
+        <svg width="16" height="11" viewBox="0 0 16 11"><rect x="0" y="7" width="2" height="4" rx="0.5" fill="currentColor"/><rect x="3" y="5.5" width="2" height="5.5" rx="0.5" fill="currentColor"/><rect x="6" y="4" width="2" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="2" width="2" height="9" rx="0.5" fill="currentColor"/></svg>
+        <span>5G</span>
+        <svg width="24" height="12" viewBox="0 0 24 12"><rect x="0" y="1" width="20" height="10" rx="2" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="2" y="3" width="16" height="6" rx="1" fill="currentColor"/><rect x="22" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="chat-header-area">
+        <div class="ch-title">专属健康 AI</div>
+        <div class="ch-sub"><svg class="icon" style="font-size:11px"><use href="#i-shield"/></svg>本地规则 · 配置后可选云端回答</div>
+      </div>
+      <div class="chat-list"></div>
+      <div class="chat-input-area">
+        <button class="voice-hold-btn"><svg class="icon"><use href="#i-mic"/></svg>按住说话</button>
+        <div class="chat-text-row"><input type="text" class="chat-input" placeholder="输入健康问题…"><button class="chat-send-btn"><svg class="icon" style="font-size:15px"><use href="#i-send"/></svg></button></div>
+        <div class="chat-privacy"><svg class="icon" style="font-size:10px"><use href="#i-shield"/></svg>云端提问时会发送问题及近期记录摘要</div>
+      </div>
+    </div>
+        <div class="card-nav">
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-home"/></svg><span class="nav-label">首页</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-camera"/></svg><span class="nav-label">测量</span></div>
+      <div class="nav-tab active"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-chat"/></svg><span class="nav-label">AI顾问</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-gear"/></svg><span class="nav-label">设置</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Card 4: 设置 ====== -->
+<div class="phone-card">
+  <div class="phone-screen pg-settings">
+    <div class="dynamic-island"><span class="di-hr">PulseCam</span></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="status-icons">
+        <svg width="16" height="11" viewBox="0 0 16 11"><rect x="0" y="7" width="2" height="4" rx="0.5" fill="currentColor"/><rect x="3" y="5.5" width="2" height="5.5" rx="0.5" fill="currentColor"/><rect x="6" y="4" width="2" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="2" width="2" height="9" rx="0.5" fill="currentColor"/></svg>
+        <span>5G</span>
+        <svg width="24" height="12" viewBox="0 0 24 12"><rect x="0" y="1" width="20" height="10" rx="2" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="2" y="3" width="16" height="6" rx="1" fill="currentColor"/><rect x="22" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div style="font-size:20px;font-weight:600;color:var(--ink);margin-bottom:2px;letter-spacing:0.02em">设置</div>
+
+    </div>
+        <div class="card-nav">
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-home"/></svg><span class="nav-label">首页</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-camera"/></svg><span class="nav-label">测量</span></div>
+      <div class="nav-tab"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-chat"/></svg><span class="nav-label">AI顾问</span></div>
+      <div class="nav-tab active"><div class="nav-dot-indicator"></div><svg class="icon nav-icon"><use href="#i-gear"/></svg><span class="nav-label">设置</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /canvas -->
+
+<script>
+function switchScenario(btn, icon, title, text){
+  document.querySelectorAll('#scenarioPills .scenario-pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('saIcon').textContent = icon;
+  document.getElementById('saTitle').textContent = title;
+  document.getElementById('saText').innerHTML = text;
+}
+document.querySelectorAll('.toggle-sw').forEach(t=>t.addEventListener('click',()=>t.classList.toggle('on')));
+document.querySelectorAll('.slider-input').forEach(s=>{
+  s.addEventListener('input',function(){
+    var g=this.closest('.slider-group'),v=g.querySelector('.sv'),l=g.querySelector('.sl');
+    if(v&&l){
+      if(l.textContent.includes('心率')) v.textContent=this.value+' bpm';
+      else v.textContent=parseFloat(this.value).toFixed(1);
+    }
+  });
+});
+</script>
+ <script type="module" src="/breathing.js"></script>
+ <script type="module" src="/ai-chat.js"></script>
+ <script type="module" src="/scan-engine.js"></script>
+ <script src="app.js?v=20261103_review_v14" defer></script>
+ <script src="pwa.js?v=20261030_intl_v3" defer></script>
+</body>
+</html>
+

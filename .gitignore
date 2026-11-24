@@ -1,0 +1,13 @@
+**/node_modules/
+**/data/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+*.log
+PulseCam_参赛提交包.zip
+PulseCam_参赛提交包/
+PulseCam-双语版.pptx
+_工作资料/
+03_文档/
+competition_pdf_text.txt
+doc_dump.txt
